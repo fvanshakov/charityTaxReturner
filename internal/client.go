@@ -1,4 +1,4 @@
-package main
+package internal
 
 import (
 	"context"
@@ -36,7 +36,7 @@ func saveTokenToFile(token *oauth2.Token) error {
 	return err
 }
 
-func getTokenFromWeb(authCode string, config *oauth2.Config, ctx context.Context) (*oauth2.Token, error) {
+func getTokenFromWeb(ctx context.Context, authCode string, config *oauth2.Config) (*oauth2.Token, error) {
 	token, err := config.Exchange(ctx, authCode)
 	if err != nil {
 		return nil, err
@@ -44,12 +44,12 @@ func getTokenFromWeb(authCode string, config *oauth2.Config, ctx context.Context
 	return token, nil
 }
 
-func getClient(authCode string, config *oauth2.Config, ctx context.Context) (*http.Client, error) {
+func getClient(ctx context.Context, authCode string, config *oauth2.Config) (*http.Client, error) {
 
 	token, err := retrieveTokenFromFile()
 	if err != nil || token == nil {
 		fmt.Printf("не удалось достать токен из файла")
-		token, err = getTokenFromWeb(authCode, config, ctx)
+		token, err = getTokenFromWeb(ctx, authCode, config)
 		if err != nil {
 			fmt.Printf("не удалось получить токен из сетевого запроса")
 			return nil, err
@@ -62,12 +62,10 @@ func getClient(authCode string, config *oauth2.Config, ctx context.Context) (*ht
 	return config.Client(context.Background(), token), nil
 }
 
-func getGmailService(authCode string, clientFile []byte) (*gmail.Service, error) {
-
-	ctx := context.Background()
+func GetGmailService(ctx context.Context, authCode string, clientFile []byte) (*gmail.Service, error) {
 	clientConfig, err := google.ConfigFromJSON(clientFile, gmail.GmailReadonlyScope)
 
-	client, err := getClient(authCode, clientConfig, ctx)
+	client, err := getClient(ctx, authCode, clientConfig)
 	if err != nil {
 		log.Fatal("не удалось создать клиент")
 	}

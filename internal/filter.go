@@ -1,6 +1,7 @@
-package main
+package internal
 
 import (
+	"context"
 	"encoding/base64"
 	"fmt"
 	"google.golang.org/api/gmail/v1"
@@ -12,8 +13,8 @@ var charities = []string{
 	"БФ «Банк еды «Русь»",
 }
 
-func filterMessages(messages []*gmail.Message) []*gmail.Message {
-	resultMessages := []*gmail.Message{}
+func FilterMessages(ctx context.Context, messages []*gmail.Message, maxMessagesNbr int) []*gmail.Message {
+	resultMessages := make([]*gmail.Message, 0, maxMessagesNbr)
 	for _, message := range messages {
 		body := message.Payload.Body.Data
 		decodedBody, err := base64.URLEncoding.DecodeString(body)
