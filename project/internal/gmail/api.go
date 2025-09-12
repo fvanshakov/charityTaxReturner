@@ -1,9 +1,10 @@
-package internal
+package gmail
 
 import (
 	"context"
 	"fmt"
 	"google.golang.org/api/gmail/v1"
+	"project/internal"
 	"time"
 )
 
@@ -16,7 +17,7 @@ func GetMessages(ctx context.Context, client *gmail.Service, maxMessages int, da
 	fullMessages := make([]*gmail.Message, 0, maxMessages)
 	var pageToken string
 
-	dateAfterString := "after:" + FormatDateYYYYMMDD(dateAfter)
+	dateAfterString := "after:" + internal.FormatDateYYYYMMDD(dateAfter)
 
 	maxResults := maxMessages
 	if maxMessages > ultimateMaxMessages {
