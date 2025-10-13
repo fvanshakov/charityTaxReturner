@@ -1,14 +1,14 @@
 package user
 
 import (
+	"charityTax/internal"
+	"charityTax/internal/database"
 	"context"
 	"errors"
+	"github.com/jackc/pgx/v5"
 	"golang.org/x/oauth2"
-	"project/internal"
-	"project/internal/database"
 	"time"
 
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -30,18 +30,14 @@ func NewUserRepository(db *database.DatabaseManager) *UserRepository {
 	}
 }
 
-func (r *UserRepository) CreateUser(ctx context.Context, password, email string) (*User, error) {
-	user, err := NewUser(password, email, r.config)
-	if err != nil {
-		return nil, err
-	}
+func (r *UserRepository) CreateUser(ctx context.Context, user *User) (*User, error) {
 	query := `
 		INSERT INTO users (email, email_hmac, password_hash)
 		VALUES ($1, $2, $3)
 		RETURNING id
 	`
 
-	err = r.db.QueryRow(ctx, query,
+	err := r.db.QueryRow(ctx, query,
 		user.Email,
 		user.EmailHMAC,
 		user.PasswordHash,

@@ -1,6 +1,8 @@
 package user
 
-import "project/internal"
+import (
+	"charityTax/internal"
+)
 
 type UserRepositoryConfig struct {
 	EncryptionKey      []byte

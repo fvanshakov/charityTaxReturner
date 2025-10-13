@@ -1,8 +1,8 @@
 package database
 
 import (
+	"charityTax/internal"
 	"fmt"
-	"project/internal"
 )
 
 type DatabaseConfig struct {

@@ -1,9 +1,9 @@
 package user
 
 import (
+	"charityTax/internal"
 	"encoding/base64"
 	"encoding/json"
-	"project/internal"
 
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
@@ -59,7 +59,7 @@ func (u *User) SetEmail(email string, encryptionKey []byte, hmacKey []byte) erro
 	return nil
 }
 
-func (u *User) GetEmail(encryptionKey []byte) (string, error) {
+func (u *User) GetDecryptedEmail(encryptionKey []byte) (string, error) {
 	encryptedData, err := base64.StdEncoding.DecodeString(u.Email)
 	if err != nil {
 		return "", err

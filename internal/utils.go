@@ -7,9 +7,8 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
-	"encoding/json"
+	"github.com/gin-gonic/gin"
 	"io"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -114,12 +113,10 @@ func compareHMAC(hmac1, hmac2 string) bool {
 	return hmac.Equal(decoded1, decoded2)
 }
 
-func RespondWithJSON(w http.ResponseWriter, statusCode int, payload interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(payload)
+func RespondWithJSON(c *gin.Context, statusCode int, payload interface{}) {
+	c.JSON(statusCode, payload)
 }
 
-func RespondWithError(w http.ResponseWriter, statusCode int, message string) {
-	RespondWithJSON(w, statusCode, map[string]string{"error": message})
+func RespondWithError(c *gin.Context, statusCode int, message string) {
+	c.JSON(statusCode, gin.H{"error": message})
 }
