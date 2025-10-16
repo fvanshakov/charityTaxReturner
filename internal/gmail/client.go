@@ -2,16 +2,13 @@ package gmail
 
 import (
 	"charityTax/internal"
-	"charityTax/internal/database"
-	userLogic "charityTax/internal/user"
 	"context"
-	"errors"
 	"fmt"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/gmail/v1"
 	"google.golang.org/api/option"
-	"log"
+	"net/http"
 	"time"
 )
 
@@ -19,59 +16,52 @@ const ultimateMaxMessages = 500
 const user = "me" // константа пользователя, подразумевается что при таком значении пользователь определяется по токену
 
 type GmailClient struct {
-	rep          *userLogic.UserRepository
-	token        *oauth2.Token
 	gmailService *gmail.Service
+}
+
+type GmailClientParamsProvider struct {
+	token  *oauth2.Token
+	client *http.Client
+}
+
+func (paramsProvider *GmailClientParamsProvider) GetToken() *oauth2.Token {
+	return paramsProvider.token
+}
+
+func (paramsProvider *GmailClientParamsProvider) GetClient() *http.Client {
+	return paramsProvider.client
+}
+
+func NewGmailClientParamsProvider(
+	ctx context.Context,
+	authCode string,
+	token *oauth2.Token,
+	clientFile []byte,
+) (*GmailClientParamsProvider, error) {
+	resultToken := token
+	config, err := google.ConfigFromJSON(clientFile, gmail.GmailReadonlyScope)
+	if err != nil {
+		return nil, err
+	}
+	if token == nil && authCode != "" {
+		resultToken, err = config.Exchange(ctx, authCode)
+	}
+	client := config.Client(context.Background(), token)
+	if err != nil {
+		return nil, err
+	}
+	return &GmailClientParamsProvider{token: resultToken, client: client}, nil
 }
 
 func NewGmailClient(
 	ctx context.Context,
-	authCode string,
-	user *userLogic.User,
-	clientFile []byte,
+	client *http.Client,
 ) (*GmailClient, error) {
-	config, err := google.ConfigFromJSON(clientFile, gmail.GmailReadonlyScope)
-	token, err := config.Exchange(ctx, authCode)
-	if err != nil {
-		return nil, err
-	}
-
-	dbManager, err := database.NewDatabase(ctx)
-	defer dbManager.Close()
-	if err != nil {
-		log.Fatal(err)
-		return nil, err
-	}
-	repo := userLogic.NewUserRepository(dbManager)
-	if err != nil {
-		log.Fatal("не удалось создать http сервис")
-		return nil, err
-	}
-	gmailClient := &GmailClient{
-		repo,
-		token,
-		nil,
-	}
-	client := config.Client(context.Background(), token)
-
-	existingUser, err := repo.GetUserByEmail(ctx, user.EmailHMAC)
-	if err != nil {
-		log.Fatal(err)
-	}
-	if existingUser != nil {
-		return nil, errors.New("user already exists")
-	}
-	createdUser, err := repo.CreateUser(ctx, user)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = repo.SaveOauthToken(ctx, createdUser, token); err != nil {
-		return nil, err
-	}
 	service, err := gmail.NewService(ctx, option.WithHTTPClient(client))
-	gmailClient.gmailService = service
-	return gmailClient, nil
+	if err != nil {
+		return nil, err
+	}
+	return &GmailClient{gmailService: service}, nil
 }
 
 func (client *GmailClient) GetMessages(ctx context.Context, maxMessages int, dateAfter time.Time) ([]*gmail.Message, error) {
@@ -88,7 +78,7 @@ func (client *GmailClient) GetMessages(ctx context.Context, maxMessages int, dat
 	}
 
 	for {
-		call := client.gmailService.Users.Messages.List("me").MaxResults(int64(maxResults)).Q(dateAfterString)
+		call := client.gmailService.Users.Messages.List(user).MaxResults(int64(maxResults)).Q(dateAfterString)
 		response, err := call.Do()
 		if err != nil {
 			fmt.Printf("не получилось сделать листинг сообщений")

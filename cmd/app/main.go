@@ -24,7 +24,7 @@ func main() {
 	r := gin.Default()
 
 	r.GET("/api/status", func(ginCtx *gin.Context) {
-		handlers.NewCreateUserHandler(ctx, ginCtx, clientFile, date)
+		handlers.UserCreateHandler(ctx, ginCtx, clientFile, date)
 	})
 
 	err = r.Run()
